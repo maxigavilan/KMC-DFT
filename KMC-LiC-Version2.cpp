@@ -7,7 +7,6 @@
 ///Libraries
 #include <stdlib.h>
 #include <stdio.h>
-#include <cerrno>
 #include <math.h>
 #include <limits.h>
 //#include <conio.h>    ///This may be activated to print in screen, and turned off to run in clusters
@@ -113,7 +112,7 @@ const double    delta=0.001;                    ///delta del paper Chaterjee (20
 #define grabaver_en     "checking-data.dat"          ///not-averaged output data
 #define grabared_en     "lattice-coordinates.xyz"    ///intercalation lattice coordinates
 #define grabavmd_en     "vmd.xyz"                    ///Li+ configuration coordinates
-#define grabaC_en "C96x96x4.xyz"
+#define grabaC_en 	 "C96x96x4.xyz"		///Create Carbon atoms coordinates (not necessary)	
 
 //#define grabaC_en       "C24x108.xyz"
 FILE  *archivo, *archivo1, *archivo2, *archivo3, *archivo7;
@@ -148,28 +147,6 @@ void Inicial();                     ///Set the initial conditions to run kMC
 void GrabaDif();                    ///Output data with instant values of a configuration, given a kMC step, this is used to follow the progress of a run
 void GrabaVer();                    ///Output data from the averaged values in the "Nbins" time boxes
 void carga();                       ///Read Li+ coordinates from a file (if necessary)
-
-
-// Helpers rudimentarios de I/O
-static FILE* AbrirArchivo(const char* path, const char* modo)
-{
-    FILE* rv = fopen(path, modo);
-    if (rv == nullptr) {
-        fprintf(stderr, "Error abriendo archivo %s: %s\n", path, strerror(errno));
-        exit(1);
-    }
-    return rv;
-}
-
-template <typename T>
-static void LeerUnDato(FILE* archivo, const char* fmt, T* salida)
-{
-    int rv = fscanf(archivo, fmt, salida);
-    if (rv < 1) {
-        fprintf(stderr, "Error leyendo valor formato %s.\n", fmt);
-        exit(1);
-    }
-}
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -627,59 +604,46 @@ void vmd(){
 }
 
 void carga(){
-   int e1;
-    int E;
-    double B, C, D;
-    char Li[4];
+int e1,jj;
+int E;
+double B,C,D;
+char Li;
 
-    FILE* archivo1 = AbrirArchivo(lee_info_en, "r");
+ if ((archivo1 =fopen (lee_info_en,"r"))== NULL);//{printf("Error al abrir el archivo\n"); exit(0);}
 
-    for (int jj = 0; jj < frames; jj++) {
-        LeerUnDato(archivo1, "%d", &E);
-        fscanf(archivo1, "\n");
-        for (int ii = 0; ii < Npt; ii++) {
-            LeerUnDato(archivo1, "%3s", Li);
-            LeerUnDato(archivo1, "%le", &B);
-            LeerUnDato(archivo1, "%le", &C);
-            LeerUnDato(archivo1, "%le", &D);
+     for(jj=0;jj<frames;jj++){
+        fscanf(archivo1,"%d",&E);
+        fscanf(archivo1,"\n");
+        for(ii=0; ii<Npt; ii++){
+        fscanf(archivo1,"%s", &Li);
+        fscanf(archivo1,"%le", &B);
+        fscanf(archivo1,"%le", &C);
+        fscanf(archivo1,"%le", &D);
+
         }
     } //del for ii
-    e1 = 0;
-    LeerUnDato(archivo1, "%d", &E);
-    fscanf(archivo1, "\n");
-    for (int ii = 0; ii < Npt; ii++) {
-        LeerUnDato(archivo1, "%3s", Li);
-        LeerUnDato(archivo1, "%le", &B);
-        LeerUnDato(archivo1, "%le", &C);
-        LeerUnDato(archivo1, "%le", &D);
-        if (D < 0.0) {
-            Ocup[ii] = false;
-        } else {
-            Ocup[ii] = true;
-            e1++;
-        }
+    e1=0;
+    fscanf(archivo1,"%d",&E);
+    fscanf(archivo1,"\n");
+    for(ii=0; ii<Npt; ii++){
+        fscanf(archivo1,"%s", &Li);
+        fscanf(archivo1,"%le", &B);
+        fscanf(archivo1,"%le", &C);
+        fscanf(archivo1,"%le", &D);
+        if(D<0.0){Ocup[ii]=0;}
+        else{Ocup[ii]=1;e1++;}
     }
+
     fclose(archivo1);
 
-    Nconst = e1;
+    Nconst=e1;
 
-    for (int i = 0; i < Npt; i++) {
-        if (Ocup[i]) {
-            HI += gamm;
-            for (int n = 0; n < Nxy[i]; n++) {
-                int j = numven[i][n];
-                if (Ocup[j]) {
-                    HI += 0.5 * H1[i][n];
-                }
-            }
-            for (int n = 0; n < Nz[i]; n++) {
-                int j = numven2[i][n];
-                if (Ocup[j]) {
-                    HI += 0.5 * H2[i][n];
-                }
-            }
-        }
-    }
+    for(i=0;i<Npt;i++){
+        if(Ocup[i]==1){
+	HI+=gamm;
+        for (n=0;n<Nxy[i];n++){j=numven[i][n];if(Ocup[j]==1){ HI+=0.5*H1[i][n];}}
+        for (n=0;n<Nz[i];n++){j=numven2[i][n];if(Ocup[j]==1){ HI+=0.5*H2[i][n];}}
+    }}
 }
 
 
